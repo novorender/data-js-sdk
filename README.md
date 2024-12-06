@@ -1,6 +1,6 @@
-<img src="https://novorender.com/wp-content/uploads/2021/06/novorender_logo_RGB_2021.png"/>
+<a href="https://novorender.com/" target="_blank" rel="noopener noreferrer"><img width="200px" src="https://novorender.com/wp-content/uploads/2023/03/Logo.svg" alt="Novorender logo"></a>
 
-# [NovoRender](http://novorender.com/)
+<a href="https://docs.novorender.com/" target="_blank" rel="noopener noreferrer">Novorender docs</a>
 
 > A Data JS API for managing scalable Novorender 3D rendering in the cloud.
 
