@@ -127,7 +127,7 @@ class RemoteMetadataDB implements Public.ObjectDB {
     private loadCompleteMetadata = async (id: number) => {
         let metadata: any = this.db[id];
         if (!metadata || !metadata.name) {
-            const response = await fetch(`${this.url}/${id}`, await this.auth());
+            const response = await fetch(`${this.url}/metadata/${id}`, await this.auth());
             if (!response.ok)
                 throw new Error(response.statusText);
             const md = (await response.json()) as Public.ObjectData;
@@ -157,6 +157,17 @@ class RemoteMetadataDB implements Public.ObjectDB {
     }
 
     search(filter: Public.SearchOptions, signal?: AbortSignal): AsyncIterableIterator<Public.HierarcicalObjectReference> {
+        const searchPattern =
+            typeof filter.searchPattern === "string"
+                ? [{ value: [filter.searchPattern] }]
+                : filter.searchPattern?.map((pattern) => {
+                      if (typeof pattern.value === "string") {
+                          return { ...pattern, value: [pattern.value] };
+                      }
+                      return pattern;
+                  });
+        filter = {...filter, searchPattern};
+
         return getFromCosmos2(this.db, filter.full ? this.loadMetaData : this.loadCompleteMetadata, this.url, this.auth, filter, signal);
     }
 
@@ -204,12 +215,12 @@ export class API implements Public.API {
     }
 
     async getUserInformation(): Promise<{ name: string; organization: string; role: string | undefined; features: any; } | undefined> {
-        const res = await fetch(`${this.serviceUrl}/user`, await this.auth());
+        const res = await fetch(`${this.serviceUrl}/api/user`, await this.auth());
         const data = await res.json();
         return { name: data?.user, organization: data?.organization, role: data?.role || undefined, features: data?.features };
     }
     async getScenes(): Promise<readonly Public.ScenePreview[]> {
-        const res = await fetch(`${this.serviceUrl}/scenes`, await this.auth());
+        const res = await fetch(`${this.serviceUrl}/api/scenes`, await this.auth());
         const data: Public.ScenePreview[] = await res.json();
         // if (data.some(sp => sp.id === "9fb7bdf8ae8445189573681194718db8"))
         return data;
@@ -217,10 +228,10 @@ export class API implements Public.API {
         //     .concat(data);
     }
     async loadScene(id: string): Promise<Public.SceneData> {
-        const res = await fetch(`${this.serviceUrl}/scenes/${id}`, await this.auth());
+        const res = await fetch(`${this.serviceUrl}/api/scenes/${id}`, await this.auth());
         const data = await res.json();
         // const db = data.cosmosDB ? new RemoteMetadataDB(`${this.serviceUrl}/metadata/${id}`, this.auth) : undefined;
-        const db = new RemoteMetadataDB(`${this.serviceUrl}/metadata/${id}`, this.auth, data.url);
+        const db = new RemoteMetadataDB(`${this.serviceUrl}/projects/${id}`, this.auth, data.url);
         data.db = db;
     
         const { settings, selectedObjects, hiddenObjects, cameraBookmarks } = data;
@@ -276,7 +287,7 @@ export class API implements Public.API {
         (scene as any).url = undefined;
         // (scene as any).title = undefined;
         const body = new Blob([JSON.stringify(scene)], { type: 'application/json' });
-        const url = `${this.serviceUrl}/scenes/${id}/ ${mainscene ? `/${mainscene}` : ""}`;
+        const url = `${this.serviceUrl}/api/scenes/${id}/ ${mainscene ? `/${mainscene}` : ""}`;
         const requestInit = await this.auth({
             method: "POST",
             body,
@@ -286,13 +297,13 @@ export class API implements Public.API {
     }
 
     async getBookmarks(id: string, options?: { group?: string, personal?: boolean }): Promise<Public.Bookmark[]> {
-        const res = await fetch(`${this.serviceUrl}/scenes/${id}/${options?.personal ? "personal" : ""}bookmarks${options?.group ? ("/" + options.group) : ""}`, await this.auth());
+        const res = await fetch(`${this.serviceUrl}/api/scenes/${id}/${options?.personal ? "personal" : ""}bookmarks${options?.group ? ("/" + options.group) : ""}`, await this.auth());
         return await res.json();
     }
 
     async saveBookmarks(id: string, bookmarks: Public.Bookmark[], options?: { group?: string, personal?: boolean}): Promise<boolean> {
         const body = new Blob([JSON.stringify(bookmarks)], { type: 'application/json' });
-        const url = `${this.serviceUrl}/scenes/${id}/${options?.personal ? "personal":""}bookmarks${options?.group ? ("/"+options.group) : ""}`;
+        const url = `${this.serviceUrl}/api/scenes/${id}/${options?.personal ? "personal":""}bookmarks${options?.group ? ("/"+options.group) : ""}`;
         const requestInit = await this.auth({
             method: "POST",
             body,
@@ -302,9 +313,9 @@ export class API implements Public.API {
     }
 
     async getGroupIds(sceneId: string, id: string): Promise<Public.ObjectId[]> {
-        const res = await fetch(`${this.serviceUrl}/scenes/${sceneId}/group/${id}`, await this.auth());
+        const res = await fetch(`${this.serviceUrl}/api/scenes/${sceneId}/group/${id}`, await this.auth());
         return await res.json();
-        // const lines = streamTextLines(`${this.serviceUrl}/scenes/${sceneId}/group/${id}`, await this.auth());
+        // const lines = streamTextLines(`${this.serviceUrl}/api/scenes/${sceneId}/group/${id}`, await this.auth());
         // const data: Public.ObjectId[] = []
         // for await (const line of lines) {
         //     if(line) data.push(parseInt(line));
@@ -313,7 +324,7 @@ export class API implements Public.API {
     }
 
     async deleteScene(id: string): Promise<boolean> {
-        const url = `${this.serviceUrl}/scenes/${id}`;
+        const url = `${this.serviceUrl}/api/scenes/${id}`;
         const requestInit = await this.auth({
             method: "DELETE"
         });
@@ -460,7 +471,7 @@ export class API implements Public.API {
         }
     }
     async getSceneDefinition(id: string): Promise<Public.SceneDefinition> {
-        const res = await fetch(`${this.serviceUrl}/scenes/${id}/config`, await this.auth());
+        const res = await fetch(`${this.serviceUrl}/api/scenes/${id}/config`, await this.auth());
         return await res.json();
     }
 
