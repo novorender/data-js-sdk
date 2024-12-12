@@ -53,7 +53,7 @@ export default [
                 ]
             }),
             emitEJS({
-                src: "src",
+                src: ".",
                 include: "README.md",
                 data: {
                     packageJson,
