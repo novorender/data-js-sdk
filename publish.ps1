@@ -1,5 +1,4 @@
 "Building project..."
-npm run build:ts
 npm run build
 
 "Publishing project..."
