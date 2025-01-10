@@ -219,6 +219,9 @@ export class API implements Public.API {
     async loadScene(id: string): Promise<Public.SceneData> {
         const res = await fetch(`${this.serviceUrl}/scenes/${id}`, await this.auth());
         const data = await res.json();
+        if (!res.ok) {
+            data.statusCode = res.status;
+        }
         // const db = data.cosmosDB ? new RemoteMetadataDB(`${this.serviceUrl}/metadata/${id}`, this.auth) : undefined;
         const db = new RemoteMetadataDB(`${this.serviceUrl}/metadata/${id}`, this.auth, data.url);
         data.db = db;
